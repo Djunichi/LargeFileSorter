@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Microsoft.Extensions.Configuration;
+using System.Diagnostics;
 using System.Text;
 using System.Threading.Channels;
 
@@ -13,17 +14,17 @@ internal class Program : IDisposable
     /// <summary>
     /// Size of reading buffer
     /// </summary>
-    private const int BufferSize = 1024 * 1024;
+    private readonly int BufferSize;
     
     /// <summary>
     /// Path to file
     /// </summary>
-    private const string InputFile = "../../../../text.txt";
+    private readonly string InputFile;
     
     /// <summary>
     /// Size of temp file
     /// </summary>
-    private const int TempFileSize = 100 * 1024 * 1024;
+    private readonly int TempFileSize;
     
     /// <summary>
     /// Count of work threads depended on available cores
@@ -61,6 +62,12 @@ internal class Program : IDisposable
     /// </summary>
     private Program()
     {
+        var config = GetConfig();
+
+        int.TryParse(config.GetSection("AppSettings:BufferSize").Value, out BufferSize);
+        InputFile = config.GetSection("AppSettings:InputFile").Value;
+        int.TryParse(config.GetSection("AppSettings:TempFileSize").Value, out TempFileSize);
+        ;
         _comparer = new Comparer();
 
         _splitFiles = new();
@@ -211,4 +218,11 @@ internal class Program : IDisposable
         return 0;
     }
 
+    private static IConfiguration GetConfig()
+    {
+        var builder = new ConfigurationBuilder()
+                     .SetBasePath(Directory.GetCurrentDirectory())
+                     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+        return builder.Build();
+    }
 }
